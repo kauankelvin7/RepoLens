@@ -1,1 +1,6 @@
-²ø1šYì
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#0f1219"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#303746" stroke-width="2"/>
+  <path d="M16 45V19h11.3c6.7 0 10.9 3.3 10.9 9 0 3.8-2 6.6-5.2 8l6.2 9h-7.8l-5-7.7H23V45h-7Zm7-13.5h3.8c2.8 0 4.4-1 4.4-3.3 0-2.2-1.6-3.2-4.4-3.2H23v6.5Z" fill="#f3f5f7"/>
+  <path d="M41 45V19h7v20h10v6H41Z" fill="#a8ff60"/>
+</svg>
