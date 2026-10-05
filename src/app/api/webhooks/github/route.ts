@@ -27,16 +27,46 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
+  const event = request.headers.get("x-github-event") ?? "unknown";
+  const delivery = request.headers.get("x-github-delivery") ?? null;
   const repository =
     payload.repository && typeof payload.repository === "object"
       ? (payload.repository as { full_name?: string }).full_name
       : undefined;
 
+  const installation =
+    payload.installation && typeof payload.installation === "object"
+      ? (payload.installation as { id?: number; app_id?: number })
+      : undefined;
+
+  const hook =
+    payload.hook && typeof payload.hook === "object"
+      ? (payload.hook as { app_id?: number })
+      : undefined;
+
+  const appId = installation?.app_id ?? hook?.app_id ?? null;
+  const installationId = installation?.id ?? null;
+  const action = typeof payload.action === "string" ? payload.action : null;
+
+  console.info(
+    JSON.stringify({
+      scope: "github-webhook",
+      event,
+      delivery,
+      repository: repository ?? null,
+      action,
+      appId,
+      installationId,
+    }),
+  );
+
   return NextResponse.json({
     ok: true,
-    event: request.headers.get("x-github-event") ?? "unknown",
-    delivery: request.headers.get("x-github-delivery") ?? null,
+    event,
+    delivery,
     repository: repository ?? null,
-    action: typeof payload.action === "string" ? payload.action : null,
+    action,
+    appId,
+    installationId,
   });
 }
