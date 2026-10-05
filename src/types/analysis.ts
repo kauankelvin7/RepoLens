@@ -1,0 +1,77 @@
+export type ScoreKey =
+  | "documentation"
+  | "automation"
+  | "security"
+  | "maintenance"
+  | "engineering";
+
+export type Severity = "high" | "medium" | "low";
+
+export interface ScoreBreakdown {
+  key: ScoreKey;
+  label: string;
+  score: number;
+  summary: string;
+}
+
+export interface Recommendation {
+  id: string;
+  title: string;
+  description: string;
+  severity: Severity;
+  category: ScoreKey;
+}
+
+export interface LanguageShare {
+  name: string;
+  bytes: number;
+  percentage: number;
+}
+
+export interface RepositorySummary {
+  fullName: string;
+  name: string;
+  owner: string;
+  description: string | null;
+  url: string;
+  homepage: string | null;
+  defaultBranch: string;
+  stars: number;
+  forks: number;
+  openIssues: number;
+  archived: boolean;
+  pushedAt: string;
+  license: string | null;
+  topics: string[];
+  visibility: string;
+}
+
+export interface RepositorySignals {
+  readme: boolean;
+  license: boolean;
+  contributing: boolean;
+  codeOfConduct: boolean;
+  securityPolicy: boolean;
+  workflows: number;
+  codeql: boolean;
+  dependabot: boolean;
+  lockfile: boolean;
+  tests: boolean;
+  issueTemplates: boolean;
+  pullRequestTemplate: boolean;
+  docsDirectory: boolean;
+  envExample: boolean;
+  typedLanguage: boolean;
+  treeTruncated: boolean;
+}
+
+export interface RepoAnalysis {
+  repository: RepositorySummary;
+  overallScore: number;
+  grade: "A" | "B" | "C" | "D" | "F";
+  scores: ScoreBreakdown[];
+  signals: RepositorySignals;
+  languages: LanguageShare[];
+  recommendations: Recommendation[];
+  analyzedAt: string;
+}

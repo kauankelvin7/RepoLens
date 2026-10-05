@@ -1,0 +1,23 @@
+name: Bug report
+description: Report a reproducible problem in RepoLens.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected.
+    validations:
+      required: true
+  - type: input
+    id: repository
+    attributes:
+      label: Repository analyzed
+      placeholder: owner/repository
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true

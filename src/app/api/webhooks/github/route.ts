@@ -1,0 +1,42 @@
+import { NextResponse } from "next/server";
+
+import { verifyGitHubWebhook } from "@/lib/webhook";
+
+export const runtime = "nodejs";
+
+export async function POST(request: Request) {
+  const secret = process.env.GITHUB_WEBHOOK_SECRET;
+  if (!secret) {
+    return NextResponse.json(
+      { error: "Webhook ainda não configurado no servidor." },
+      { status: 503 },
+    );
+  }
+
+  const rawBody = await request.text();
+  const signature = request.headers.get("x-hub-signature-256");
+
+  if (!verifyGitHubWebhook(rawBody, signature, secret)) {
+    return NextResponse.json({ error: "Assinatura inválida." }, { status: 401 });
+  }
+
+  let payload: Record<string, unknown>;
+  try {
+    payload = JSON.parse(rawBody) as Record<string, unknown>;
+  } catch {
+    return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
+  }
+
+  const repository =
+    payload.repository && typeof payload.repository === "object"
+      ? (payload.repository as { full_name?: string }).full_name
+      : undefined;
+
+  return NextResponse.json({
+    ok: true,
+    event: request.headers.get("x-github-event") ?? "unknown",
+    delivery: request.headers.get("x-github-delivery") ?? null,
+    repository: repository ?? null,
+    action: typeof payload.action === "string" ? payload.action : null,
+  });
+}
