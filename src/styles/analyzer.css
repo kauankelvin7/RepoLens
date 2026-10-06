@@ -216,8 +216,29 @@
   gap: var(--space-4);
 }
 
-.loading-copy .button-status-dot {
-  color: var(--color-brand);
+.loading-copy .loading-mark {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.78rem;
+  animation: loading-mark-breathe 1.4s ease-in-out infinite;
+}
+
+.loading-copy .loading-mark svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+@keyframes loading-mark-breathe {
+  0%,
+  100% {
+    transform: scale(0.98);
+    opacity: 0.72;
+  }
+
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .loading-copy strong {

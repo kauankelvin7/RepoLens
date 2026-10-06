@@ -70,7 +70,8 @@ async function githubJson<T>(
       const body = (await response.json()) as { message?: string };
       if (body.message) message = body.message;
     } catch {
-      // Keep the safe fallback message.
+      // If GitHub sends no usable body, the status-based message is clearer than
+      // leaking a JSON parsing error to the user.
     }
     throw new GitHubRequestError(message, response.status);
   }

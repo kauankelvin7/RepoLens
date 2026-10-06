@@ -2,6 +2,7 @@
 
 import { FormEvent, useState, type CSSProperties } from "react";
 
+import { RepoLensMark } from "@/components/repolens-mark";
 import type { RepoAnalysis, Severity } from "@/types/analysis";
 
 const EXAMPLES = [
@@ -189,7 +190,7 @@ function LoadingState() {
   return (
     <section className="loading-state" aria-live="polite">
       <div className="loading-copy">
-        <span className="button-status-dot" aria-hidden="true" />
+        <RepoLensMark className="loading-mark" />
         <div>
           <strong>Lendo o repositório</strong>
           <p>

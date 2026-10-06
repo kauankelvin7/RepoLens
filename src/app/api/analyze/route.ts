@@ -53,10 +53,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Public analysis intentionally never uses GitHub App installation tokens.
-    // This prevents anonymous callers from accessing private repositories that
-    // may have installed the RepoLens GitHub App. GITHUB_TOKEN, when provided,
-    // must be scoped to public repositories only.
+    // Keep the public analyzer public-only. Even if the App is installed on a
+    // private repository, an anonymous request never gets an installation token.
     const snapshot = await fetchRepositorySnapshot(
       parsed.owner,
       parsed.repo,

@@ -24,25 +24,45 @@
   gap: 0.75rem;
 }
 
-.brand-mark {
-  width: 2.35rem;
-  height: 2.35rem;
+.repolens-mark {
+  width: 2.45rem;
+  height: 2.45rem;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border-radius: 0.8rem;
-  background: var(--color-surface-raised);
-  box-shadow: inset 0 0 0 1px var(--color-line-strong);
+  border-radius: 0.82rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(163, 255, 85, 0.1), transparent 58%),
+    linear-gradient(145deg, #121823, #0a0e15);
+  box-shadow:
+    inset 0 0 0 1px var(--color-line-strong),
+    0 8px 24px rgba(0, 0, 0, 0.2);
   color: var(--color-brand);
 }
 
-.brand-mark svg {
-  width: 1.15rem;
-  height: 1.15rem;
+.repolens-mark svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.repolens-mark .mark-lens,
+.repolens-mark .mark-handle {
   fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
+  stroke: var(--color-brand);
+  stroke-width: 1.65;
   stroke-linecap: round;
+}
+
+.repolens-mark .mark-branch {
+  fill: none;
+  stroke: #dce5d8;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.repolens-mark .mark-node {
+  fill: var(--color-brand);
 }
 
 .brand-copy {
@@ -308,22 +328,38 @@
 .footer-brand {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 1rem;
+}
+
+.footer-brand .footer-mark {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+}
+
+.footer-brand .footer-mark svg {
+  width: 1.65rem;
+  height: 1.65rem;
 }
 
 .footer-brand > div {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.22rem;
 }
 
 .footer-brand strong {
-  font-size: 1rem;
-  font-weight: 600;
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
 }
 
 .footer-brand > div > span {
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
+  max-width: 30rem;
+  color: var(--color-text-secondary);
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .footer-links {
@@ -334,12 +370,11 @@
 
 .footer-column h2 {
   margin: 0 0 1rem;
-  color: var(--color-text-muted);
-  font-family: var(--font-jetbrains-mono), Consolas, monospace;
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
 .footer-column ul {
@@ -356,22 +391,30 @@
   display: inline-flex;
   gap: 0.4rem;
   color: var(--color-text-secondary);
-  font-size: 0.84rem;
-  transition: color 160ms ease;
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 450;
+  letter-spacing: -0.012em;
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .footer-column a:hover {
   color: var(--color-text);
+  transform: translateX(2px);
 }
 
 .footer-bottom {
-  min-height: 4.4rem;
+  min-height: 4.6rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-6);
   border-top: 1px solid var(--color-line);
   color: var(--color-text-muted);
-  font-size: 0.6rem;
-  line-height: 1.5;
+  font-family: var(--font-onest), system-ui, sans-serif;
+  font-size: 0.7rem;
+  line-height: 1.55;
+  letter-spacing: -0.008em;
 }

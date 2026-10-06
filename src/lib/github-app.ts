@@ -31,7 +31,8 @@ async function appJson<T>(
   try {
     data = (await response.json()) as T;
   } catch {
-    // Some GitHub responses may not include a JSON body.
+    // A few GitHub endpoints legitimately return an empty body; the status code
+    // is still enough for callers that do not need payload data.
   }
 
   return { response, data };

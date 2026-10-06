@@ -1,18 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="bg" x1="10" y1="6" x2="54" y2="60" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#121823"/>
-      <stop offset="1" stop-color="#090c13"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(24 20) rotate(45) scale(35)">
-      <stop stop-color="#A3FF55" stop-opacity=".14"/>
-      <stop offset="1" stop-color="#A3FF55" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
-  <rect width="64" height="64" rx="16" fill="url(#glow)"/>
+  <rect width="64" height="64" rx="16" fill="#0E121A"/>
   <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="#2B3545" stroke-width="2"/>
-  <circle cx="27" cy="27" r="15" fill="none" stroke="#A3FF55" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="27" cy="27" r="15" fill="none" stroke="#A3FF55" stroke-width="3"/>
   <path d="m38 38 11 11" fill="none" stroke="#A3FF55" stroke-width="3.25" stroke-linecap="round"/>
   <path d="M21.5 19.5v15.25c0 2.7 2.2 4.9 4.9 4.9h2.6" fill="none" stroke="#DDE5D7" stroke-width="2.15" stroke-linecap="round"/>
   <path d="M21.5 25.5h5.1c3.7 0 6.4-2.3 6.4-5.65" fill="none" stroke="#DDE5D7" stroke-width="2.15" stroke-linecap="round"/>

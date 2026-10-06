@@ -1,16 +1,13 @@
 import Link from "next/link";
 
+import { RepoLensMark } from "@/components/repolens-mark";
+
 export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
         <Link className="brand" href="/" aria-label="RepoLens, início">
-          <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <circle cx="10.5" cy="10.5" r="5.75" />
-              <path d="m15 15 4.25 4.25" />
-            </svg>
-          </span>
+          <RepoLensMark />
           <span className="brand-copy">
             <strong>RepoLens</strong>
             <small>Repository diagnostics</small>

@@ -1,11 +1,13 @@
+import { RepoLensMark } from "@/components/repolens-mark";
+
 const PRODUCT_LINKS = [
   ["Analisar repositório", "#analyze"],
-  ["Modelo de avaliação", "#method"],
-  ["Limites e privacidade", "#trust"],
+  ["Como a nota é calculada", "#method"],
+  ["Privacidade e limites", "#trust"],
 ] as const;
 
 const PROJECT_LINKS = [
-  ["Código-fonte", "https://github.com/kauankelvin7/RepoLens"],
+  ["Código no GitHub", "https://github.com/kauankelvin7/RepoLens"],
   ["GitHub App", "https://github.com/apps/repolens-by-kauan"],
   ["Licença MIT", "https://github.com/kauankelvin7/RepoLens/blob/main/LICENSE"],
 ] as const;
@@ -16,26 +18,21 @@ export function SiteFooter() {
       <div className="footer-main">
         <div className="footer-brand-block">
           <div className="footer-brand">
-            <span className="brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" role="presentation">
-                <circle cx="10.5" cy="10.5" r="5.75" />
-                <path d="m15 15 4.25 4.25" />
-              </svg>
-            </span>
+            <RepoLensMark className="footer-mark" />
             <div>
               <strong>RepoLens</strong>
-              <span>Evidence-first repository diagnostics.</span>
+              <span>Diagnóstico técnico com evidências que você pode conferir.</span>
             </div>
           </div>
 
           <p>
-            Um analisador determinístico para repositórios públicos do GitHub.
-            Explica cada nota com critérios, pesos e evidências observáveis.
+            O RepoLens lê os sinais públicos de um repositório e mostra, sem
+            caixa-preta, de onde veio cada ponto da análise.
           </p>
         </div>
 
         <div className="footer-links">
-          <FooterColumn title="Produto" links={PRODUCT_LINKS} />
+          <FooterColumn title="Explorar" links={PRODUCT_LINKS} />
           <FooterColumn title="Projeto" links={PROJECT_LINKS} external />
         </div>
       </div>
@@ -43,7 +40,7 @@ export function SiteFooter() {
       <div className="footer-bottom">
         <span>© 2026 Kauan Kelvin Santos Barbosa</span>
         <span>Open source · MIT · GitHub Developer Program Member</span>
-        <span>Projeto independente. Não afiliado ao GitHub.</span>
+        <span>Projeto independente, sem afiliação com o GitHub.</span>
       </div>
     </footer>
   );
