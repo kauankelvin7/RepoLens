@@ -3,6 +3,37 @@ import { NextResponse } from "next/server";
 import { verifyGitHubWebhook } from "@/lib/webhook";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type WebhookMeta = {
+  event: string;
+  delivery: string | null;
+  repository: string | null;
+  action: string | null;
+  appId: number | null;
+  installationId: number | null;
+  receivedAt: string;
+};
+
+declare global {
+  var __repoLensLastWebhookMeta: WebhookMeta | undefined;
+}
+
+export function GET() {
+  const meta = globalThis.__repoLensLastWebhookMeta;
+
+  if (!meta) {
+    return NextResponse.json(
+      { ready: false },
+      { status: 404, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  return NextResponse.json(
+    { ready: true, ...meta },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}
 
 export async function POST(request: Request) {
   const secret = process.env.GITHUB_WEBHOOK_SECRET;
@@ -47,6 +78,16 @@ export async function POST(request: Request) {
   const appId = installation?.app_id ?? hook?.app_id ?? null;
   const installationId = installation?.id ?? null;
   const action = typeof payload.action === "string" ? payload.action : null;
+
+  globalThis.__repoLensLastWebhookMeta = {
+    event,
+    delivery,
+    repository: repository ?? null,
+    action,
+    appId,
+    installationId,
+    receivedAt: new Date().toISOString(),
+  };
 
   console.info(
     JSON.stringify({
