@@ -64,10 +64,11 @@ GitHub Actions runs the same checks on pushes and pull requests. CodeQL and Depe
 RepoLens includes:
 
 - RS256 GitHub App JWT generation
-- installation token exchange
+- installation discovery and installation token primitives
 - HMAC SHA-256 webhook verification
 - an App configuration status endpoint
 - a signed webhook endpoint at `/api/webhooks/github`
+- repository-scoped cache invalidation on signed GitHub webhook events
 
 See [docs/GITHUB_APP.md](docs/GITHUB_APP.md) for the recommended permissions and setup.
 

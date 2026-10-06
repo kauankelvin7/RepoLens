@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { verifyGitHubWebhook } from "@/lib/webhook";
@@ -48,6 +49,11 @@ export async function POST(request: Request) {
   const installationId = installation?.id ?? null;
   const action = typeof payload.action === "string" ? payload.action : null;
 
+  const cacheInvalidated = Boolean(repository);
+  if (repository) {
+    revalidateTag(`repo:${repository}`, "max");
+  }
+
   console.info(
     JSON.stringify({
       scope: "github-webhook",
@@ -57,6 +63,7 @@ export async function POST(request: Request) {
       action,
       appId,
       installationId,
+      cacheInvalidated,
     }),
   );
 
@@ -68,5 +75,6 @@ export async function POST(request: Request) {
     action,
     appId,
     installationId,
+    cacheInvalidated,
   });
 }

@@ -45,4 +45,6 @@ Scores use observable signals such as README, license, tests, workflows, Dependa
 
 ## GitHub App path
 
-Public repositories can be analyzed anonymously or through a server token. A GitHub App can later provide installation tokens for private repositories and webhook-driven refreshes without distributing personal access tokens.
+Public repositories can be analyzed anonymously or through a public-only server token. The GitHub App is authenticated independently with an App JWT and signed HMAC webhooks. When GitHub sends an event for a repository, RepoLens invalidates that repository's cached GitHub responses immediately.
+
+Installation-token primitives are implemented for future authorized workflows, but the public analyzer intentionally does not use them. Private-repository analysis will only be enabled after an explicit user-authorization flow exists.

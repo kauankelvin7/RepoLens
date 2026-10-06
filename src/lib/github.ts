@@ -50,10 +50,17 @@ function headers(token?: string): HeadersInit {
   };
 }
 
-async function githubJson<T>(path: string, token?: string): Promise<T> {
+async function githubJson<T>(
+  path: string,
+  token?: string,
+  cacheTag?: string,
+): Promise<T> {
   const response = await fetch(`https://api.github.com${path}`, {
     headers: headers(token),
-    next: { revalidate: 300 },
+    next: {
+      revalidate: 300,
+      ...(cacheTag ? { tags: [cacheTag] } : {}),
+    },
     signal: AbortSignal.timeout(8_000),
   });
 
@@ -79,9 +86,12 @@ export async function fetchRepositorySnapshot(
   const encodedOwner = encodeURIComponent(owner);
   const encodedRepo = encodeURIComponent(repo);
 
+  const cacheTag = `repo:${owner}/${repo}`;
+
   const repository = await githubJson<GitHubRepository>(
     `/repos/${encodedOwner}/${encodedRepo}`,
     token,
+    cacheTag,
   );
 
   const encodedBranch = encodeURIComponent(repository.default_branch);
@@ -90,10 +100,12 @@ export async function fetchRepositorySnapshot(
     githubJson<Record<string, number>>(
       `/repos/${encodedOwner}/${encodedRepo}/languages`,
       token,
+      cacheTag,
     ),
     githubJson<GitTreeResponse>(
       `/repos/${encodedOwner}/${encodedRepo}/git/trees/${encodedBranch}?recursive=1`,
       token,
+      cacheTag,
     ),
   ]);
 
