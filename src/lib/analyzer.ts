@@ -6,15 +6,39 @@ import type {
   RepositoryEvidence,
   RepositorySignals,
   ScoreBreakdown,
+  ScoreCriterion,
   ScoreKey,
 } from "@/types/analysis";
 
-const SCORE_LABELS: Record<ScoreKey, string> = {
-  documentation: "Documentação",
-  automation: "CI/CD",
-  security: "Segurança",
-  maintenance: "Manutenção",
-  engineering: "Engenharia",
+const SCORE_META: Record<
+  ScoreKey,
+  { label: string; description: string }
+> = {
+  documentation: {
+    label: "Documentação",
+    description:
+      "Clareza para entender, usar e contribuir sem depender de contexto externo.",
+  },
+  automation: {
+    label: "CI/CD",
+    description:
+      "Validação automática, testes e controles de dependências no fluxo de entrega.",
+  },
+  security: {
+    label: "Segurança",
+    description:
+      "Políticas e automações que reduzem exposição a falhas e dependências vulneráveis.",
+  },
+  maintenance: {
+    label: "Manutenção",
+    description:
+      "Recência, colaboração e organização do ciclo de evolução do repositório.",
+  },
+  engineering: {
+    label: "Qualidade de engenharia",
+    description:
+      "Sinais estruturais de testes, tipagem, automação e reprodutibilidade da base.",
+  },
 };
 
 function clamp(score: number) {
@@ -29,13 +53,63 @@ function scoreSummary(score: number) {
   return "Prioridade alta";
 }
 
-function makeScore(key: ScoreKey, score: number): ScoreBreakdown {
-  const normalized = clamp(score);
+function criterion({
+  id,
+  label,
+  maxPoints,
+  points,
+  evidence = [],
+  detail = null,
+}: {
+  id: string;
+  label: string;
+  maxPoints: number;
+  points: number;
+  evidence?: string[];
+  detail?: string | null;
+}): ScoreCriterion {
+  const normalized = Math.max(0, Math.min(maxPoints, points));
+  return {
+    id,
+    label,
+    points: normalized,
+    maxPoints,
+    met: normalized > 0,
+    detail,
+    evidence,
+  };
+}
+
+function booleanCriterion(
+  id: string,
+  label: string,
+  maxPoints: number,
+  met: boolean,
+  evidence: string[] = [],
+  detail: string | null = null,
+) {
+  return criterion({
+    id,
+    label,
+    maxPoints,
+    points: met ? maxPoints : 0,
+    evidence,
+    detail,
+  });
+}
+
+function makeScore(
+  key: ScoreKey,
+  criteria: ScoreCriterion[],
+): ScoreBreakdown {
+  const score = clamp(criteria.reduce((sum, item) => sum + item.points, 0));
   return {
     key,
-    label: SCORE_LABELS[key],
-    score: normalized,
-    summary: scoreSummary(normalized),
+    label: SCORE_META[key].label,
+    description: SCORE_META[key].description,
+    score,
+    summary: scoreSummary(score),
+    criteria,
   };
 }
 
@@ -68,6 +142,14 @@ function gradeFor(score: number): RepoAnalysis["grade"] {
   if (score >= 70) return "C";
   if (score >= 60) return "D";
   return "F";
+}
+
+function relativeActivity(ageDays: number) {
+  if (ageDays <= 1) return "Atualizado nas últimas 24 horas";
+  if (ageDays < 30) return `Atualizado há ${Math.round(ageDays)} dias`;
+  if (ageDays < 365)
+    return `Atualizado há ~${Math.max(1, Math.round(ageDays / 30))} meses`;
+  return `Atualizado há ~${Math.max(1, Math.round(ageDays / 365))} anos`;
 }
 
 export function analyzeSnapshot(
@@ -168,60 +250,269 @@ export function analyzeSnapshot(
     treeTruncated: snapshot.treeTruncated,
   };
 
-  let documentation = 0;
-  if (signals.readme) documentation += 35;
-  if (repository.description) documentation += 15;
-  if (signals.license) documentation += 15;
-  if (signals.contributing) documentation += 10;
-  if (signals.codeOfConduct) documentation += 5;
-  if (repository.homepage) documentation += 5;
-  if ((repository.topics?.length ?? 0) >= 3) documentation += 10;
-  if (signals.docsDirectory) documentation += 5;
-
-  let automation = 0;
-  if (signals.workflows > 0) automation += 45;
-  if (signals.tests) automation += 20;
-  if (signals.lockfile) automation += 15;
-  if (signals.dependabot) automation += 10;
-  if (signals.codeql) automation += 10;
-
-  let security = 0;
-  if (signals.securityPolicy) security += 30;
-  if (signals.dependabot) security += 25;
-  if (signals.lockfile) security += 15;
-  if (signals.codeql) security += 20;
-  if (signals.envExample) security += 10;
-
   const pushedAt = new Date(repository.pushed_at);
   const ageDays = Number.isFinite(pushedAt.getTime())
     ? Math.max(0, (now.getTime() - pushedAt.getTime()) / 86_400_000)
     : 3650;
 
-  let maintenance = 0;
-  if (ageDays <= 30) maintenance += 30;
-  else if (ageDays <= 90) maintenance += 22;
-  else if (ageDays <= 180) maintenance += 12;
-  else if (ageDays <= 365) maintenance += 5;
-  if (signals.contributing) maintenance += 15;
-  if (signals.issueTemplates) maintenance += 15;
-  if (signals.pullRequestTemplate) maintenance += 15;
-  if (repository.description) maintenance += 10;
-  if ((repository.topics?.length ?? 0) >= 3) maintenance += 10;
-  if (!repository.archived) maintenance += 5;
+  const activityPoints =
+    ageDays <= 30
+      ? 30
+      : ageDays <= 90
+        ? 22
+        : ageDays <= 180
+          ? 12
+          : ageDays <= 365
+            ? 5
+            : 0;
 
-  let engineering = 0;
-  if (signals.tests) engineering += 30;
-  if (signals.typedLanguage) engineering += 20;
-  if (signals.workflows > 0) engineering += 20;
-  if (signals.lockfile) engineering += 15;
-  if (signals.readme || signals.docsDirectory) engineering += 15;
+  const documentationCriteria: ScoreCriterion[] = [
+    booleanCriterion(
+      "readme",
+      "README",
+      35,
+      signals.readme,
+      evidence.readme,
+    ),
+    booleanCriterion(
+      "description",
+      "Descrição do repositório",
+      15,
+      Boolean(repository.description),
+      [],
+      repository.description,
+    ),
+    booleanCriterion(
+      "license",
+      "Licença",
+      15,
+      signals.license,
+      evidence.license,
+      repository.license?.spdx_id ?? repository.license?.name ?? null,
+    ),
+    booleanCriterion(
+      "contributing",
+      "Guia de contribuição",
+      10,
+      signals.contributing,
+      evidence.contributing,
+    ),
+    booleanCriterion(
+      "code-of-conduct",
+      "Código de conduta",
+      5,
+      signals.codeOfConduct,
+      evidence.codeOfConduct,
+    ),
+    booleanCriterion(
+      "homepage",
+      "Homepage",
+      5,
+      Boolean(repository.homepage),
+      [],
+      repository.homepage,
+    ),
+    booleanCriterion(
+      "topics",
+      "Tópicos do repositório",
+      10,
+      (repository.topics?.length ?? 0) >= 3,
+      [],
+      repository.topics?.length
+        ? repository.topics.join(" · ")
+        : null,
+    ),
+    booleanCriterion(
+      "docs-directory",
+      "Documentação dedicada",
+      5,
+      signals.docsDirectory,
+      evidence.docsDirectory,
+    ),
+  ];
+
+  const automationCriteria: ScoreCriterion[] = [
+    booleanCriterion(
+      "workflows",
+      "GitHub Actions",
+      45,
+      signals.workflows > 0,
+      evidence.workflows,
+      signals.workflows
+        ? `${signals.workflows} workflow(s) detectado(s)`
+        : null,
+    ),
+    booleanCriterion("tests", "Testes", 20, signals.tests, evidence.tests),
+    booleanCriterion(
+      "lockfile",
+      "Lockfile",
+      15,
+      signals.lockfile,
+      evidence.lockfile,
+    ),
+    booleanCriterion(
+      "dependabot",
+      "Dependabot",
+      10,
+      signals.dependabot,
+      evidence.dependabot,
+    ),
+    booleanCriterion(
+      "codeql",
+      "CodeQL",
+      10,
+      signals.codeql,
+      evidence.codeql,
+    ),
+  ];
+
+  const securityCriteria: ScoreCriterion[] = [
+    booleanCriterion(
+      "security-policy",
+      "Política de segurança",
+      30,
+      signals.securityPolicy,
+      evidence.securityPolicy,
+    ),
+    booleanCriterion(
+      "dependabot",
+      "Dependabot",
+      25,
+      signals.dependabot,
+      evidence.dependabot,
+    ),
+    booleanCriterion(
+      "lockfile",
+      "Lockfile",
+      15,
+      signals.lockfile,
+      evidence.lockfile,
+    ),
+    booleanCriterion(
+      "codeql",
+      "CodeQL",
+      20,
+      signals.codeql,
+      evidence.codeql,
+    ),
+    booleanCriterion(
+      "env-example",
+      "Exemplo de ambiente",
+      10,
+      signals.envExample,
+      evidence.envExample,
+    ),
+  ];
+
+  const maintenanceCriteria: ScoreCriterion[] = [
+    criterion({
+      id: "recent-activity",
+      label: "Atividade recente",
+      maxPoints: 30,
+      points: activityPoints,
+      detail: relativeActivity(ageDays),
+    }),
+    booleanCriterion(
+      "contributing",
+      "Guia de contribuição",
+      15,
+      signals.contributing,
+      evidence.contributing,
+    ),
+    booleanCriterion(
+      "issue-templates",
+      "Issue templates",
+      15,
+      signals.issueTemplates,
+      evidence.issueTemplates,
+    ),
+    booleanCriterion(
+      "pull-request-template",
+      "Pull request template",
+      15,
+      signals.pullRequestTemplate,
+      evidence.pullRequestTemplate,
+    ),
+    booleanCriterion(
+      "description",
+      "Descrição do repositório",
+      10,
+      Boolean(repository.description),
+      [],
+      repository.description,
+    ),
+    booleanCriterion(
+      "topics",
+      "Tópicos do repositório",
+      10,
+      (repository.topics?.length ?? 0) >= 3,
+      [],
+      repository.topics?.length
+        ? repository.topics.join(" · ")
+        : null,
+    ),
+    booleanCriterion(
+      "active-repository",
+      "Repositório ativo",
+      5,
+      !repository.archived,
+      [],
+      repository.archived ? "Arquivado" : "Não arquivado",
+    ),
+  ];
+
+  const engineeringCriteria: ScoreCriterion[] = [
+    booleanCriterion("tests", "Testes", 30, signals.tests, evidence.tests),
+    booleanCriterion(
+      "typed-language",
+      "Linguagem tipada",
+      20,
+      signals.typedLanguage,
+      [],
+      Object.keys(snapshot.languages)
+        .filter((language) =>
+          [
+            "typescript",
+            "rust",
+            "go",
+            "java",
+            "kotlin",
+            "c#",
+            "swift",
+            "scala",
+          ].includes(language.toLowerCase()),
+        )
+        .join(" · ") || null,
+    ),
+    booleanCriterion(
+      "workflows",
+      "GitHub Actions",
+      20,
+      signals.workflows > 0,
+      evidence.workflows,
+    ),
+    booleanCriterion(
+      "lockfile",
+      "Lockfile",
+      15,
+      signals.lockfile,
+      evidence.lockfile,
+    ),
+    booleanCriterion(
+      "documentation",
+      "Documentação técnica",
+      15,
+      signals.readme || signals.docsDirectory,
+      [...evidence.readme, ...evidence.docsDirectory].slice(0, 10),
+    ),
+  ];
 
   const scores = [
-    makeScore("documentation", documentation),
-    makeScore("automation", automation),
-    makeScore("security", security),
-    makeScore("maintenance", maintenance),
-    makeScore("engineering", engineering),
+    makeScore("documentation", documentationCriteria),
+    makeScore("automation", automationCriteria),
+    makeScore("security", securityCriteria),
+    makeScore("maintenance", maintenanceCriteria),
+    makeScore("engineering", engineeringCriteria),
   ];
 
   const overallScore = clamp(

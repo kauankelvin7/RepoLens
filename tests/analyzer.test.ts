@@ -62,6 +62,17 @@ describe("analyzeSnapshot", () => {
       ".github/workflows/codeql.yml",
     ]);
     expect(result.evidence.tests).toContain("tests/analyzer.test.ts");
+    for (const score of result.scores) {
+      expect(
+        score.criteria.reduce((sum, criterion) => sum + criterion.points, 0),
+      ).toBe(score.score);
+      expect(
+        score.criteria.reduce(
+          (sum, criterion) => sum + criterion.maxPoints,
+          0,
+        ),
+      ).toBe(100);
+    }
     expect(result.recommendations).toHaveLength(0);
   });
 

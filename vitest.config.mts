@@ -10,6 +10,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    exclude: ["**/node_modules/**", "**/.qa/**", "**/.next/**"],
     coverage: {
       reporter: ["text", "json", "html"],
     },

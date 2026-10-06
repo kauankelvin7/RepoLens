@@ -7,11 +7,23 @@ export type ScoreKey =
 
 export type Severity = "high" | "medium" | "low";
 
+export interface ScoreCriterion {
+  id: string;
+  label: string;
+  points: number;
+  maxPoints: number;
+  met: boolean;
+  detail: string | null;
+  evidence: string[];
+}
+
 export interface ScoreBreakdown {
   key: ScoreKey;
   label: string;
+  description: string;
   score: number;
   summary: string;
+  criteria: ScoreCriterion[];
 }
 
 export interface Recommendation {

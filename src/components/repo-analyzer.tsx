@@ -2,182 +2,13 @@
 
 import { FormEvent, useState, type CSSProperties } from "react";
 
-import type {
-  RepoAnalysis,
-  RepositoryEvidence,
-  ScoreKey,
-  Severity,
-} from "@/types/analysis";
+import type { RepoAnalysis, Severity } from "@/types/analysis";
 
 const EXAMPLES = [
   "kauankelvin7/RepoLens",
   "vercel/next.js",
   "facebook/react",
 ];
-
-const PREVIEW_GROUPS = [
-  {
-    index: "01",
-    title: "Documentation",
-    description: "README · docs · contributing · license",
-  },
-  {
-    index: "02",
-    title: "Engineering",
-    description: "tests · CI/CD · dependency health",
-  },
-  {
-    index: "03",
-    title: "Security",
-    description: "workflows · policies · repository hygiene",
-  },
-];
-
-type EvidenceKey = keyof RepositoryEvidence;
-
-interface EvidenceDefinition {
-  label: string;
-  signal:
-    | keyof RepoAnalysis["signals"]
-    | "repositoryDescription"
-    | "repositoryLicense"
-    | "repositoryTopics";
-  evidence?: EvidenceKey;
-  detail?: (analysis: RepoAnalysis) => string | null;
-}
-
-const CATEGORY_COPY: Record<
-  ScoreKey,
-  {
-    description: string;
-    definitions: EvidenceDefinition[];
-  }
-> = {
-  documentation: {
-    description:
-      "Avalia se alguém consegue compreender, usar e contribuir sem depender de contexto externo.",
-    definitions: [
-      { label: "README", signal: "readme", evidence: "readme" },
-      {
-        label: "Descrição do repositório",
-        signal: "repositoryDescription",
-        detail: (analysis) => analysis.repository.description,
-      },
-      {
-        label: "Licença",
-        signal: "repositoryLicense",
-        evidence: "license",
-        detail: (analysis) => analysis.repository.license,
-      },
-      {
-        label: "Guia de contribuição",
-        signal: "contributing",
-        evidence: "contributing",
-      },
-      {
-        label: "Documentação dedicada",
-        signal: "docsDirectory",
-        evidence: "docsDirectory",
-      },
-      {
-        label: "Tópicos do repositório",
-        signal: "repositoryTopics",
-        detail: (analysis) =>
-          analysis.repository.topics.length
-            ? analysis.repository.topics.join(" · ")
-            : null,
-      },
-    ],
-  },
-  automation: {
-    description:
-      "Observa validação automática, workflows e sinais de manutenção contínua.",
-    definitions: [
-      {
-        label: "GitHub Actions",
-        signal: "workflows",
-        evidence: "workflows",
-      },
-      { label: "Testes detectados", signal: "tests", evidence: "tests" },
-      {
-        label: "Dependabot",
-        signal: "dependabot",
-        evidence: "dependabot",
-      },
-      { label: "CodeQL", signal: "codeql", evidence: "codeql" },
-      { label: "Lockfile", signal: "lockfile", evidence: "lockfile" },
-    ],
-  },
-  security: {
-    description:
-      "Procura políticas, análise estática e controles que reduzem risco operacional.",
-    definitions: [
-      {
-        label: "Política de segurança",
-        signal: "securityPolicy",
-        evidence: "securityPolicy",
-      },
-      {
-        label: "Dependabot",
-        signal: "dependabot",
-        evidence: "dependabot",
-      },
-      { label: "CodeQL", signal: "codeql", evidence: "codeql" },
-      { label: "Lockfile", signal: "lockfile", evidence: "lockfile" },
-      {
-        label: "Exemplo de ambiente",
-        signal: "envExample",
-        evidence: "envExample",
-      },
-    ],
-  },
-  maintenance: {
-    description:
-      "Mede sinais de colaboração, atividade recente e organização do fluxo de contribuição.",
-    definitions: [
-      {
-        label: "Guia de contribuição",
-        signal: "contributing",
-        evidence: "contributing",
-      },
-      {
-        label: "Issue templates",
-        signal: "issueTemplates",
-        evidence: "issueTemplates",
-      },
-      {
-        label: "Pull request template",
-        signal: "pullRequestTemplate",
-        evidence: "pullRequestTemplate",
-      },
-      {
-        label: "Documentação dedicada",
-        signal: "docsDirectory",
-        evidence: "docsDirectory",
-      },
-      {
-        label: "Descrição do repositório",
-        signal: "repositoryDescription",
-        detail: (analysis) => analysis.repository.description,
-      },
-    ],
-  },
-  engineering: {
-    description:
-      "Sintetiza testes, tipagem, automação e sinais estruturais da base.",
-    definitions: [
-      { label: "Testes", signal: "tests", evidence: "tests" },
-      { label: "Linguagem tipada", signal: "typedLanguage" },
-      {
-        label: "GitHub Actions",
-        signal: "workflows",
-        evidence: "workflows",
-      },
-      { label: "Lockfile", signal: "lockfile", evidence: "lockfile" },
-      { label: "README", signal: "readme", evidence: "readme" },
-    ],
-  },
-};
 
 function scoreStyle(score: number) {
   return {
@@ -207,24 +38,6 @@ function scoreTone(score: number) {
   return "danger";
 }
 
-function signalPresent(
-  analysis: RepoAnalysis,
-  definition: EvidenceDefinition,
-) {
-  if (definition.signal === "repositoryDescription") {
-    return Boolean(analysis.repository.description);
-  }
-  if (definition.signal === "repositoryLicense") {
-    return Boolean(analysis.repository.license);
-  }
-  if (definition.signal === "repositoryTopics") {
-    return analysis.repository.topics.length >= 3;
-  }
-
-  const value = analysis.signals[definition.signal];
-  return typeof value === "number" ? value > 0 : value;
-}
-
 function isRepoAnalysis(value: unknown): value is RepoAnalysis {
   if (!value || typeof value !== "object") return false;
 
@@ -232,8 +45,10 @@ function isRepoAnalysis(value: unknown): value is RepoAnalysis {
   return (
     typeof candidate.overallScore === "number" &&
     Boolean(candidate.repository) &&
-    Boolean(candidate.evidence) &&
     Array.isArray(candidate.scores) &&
+    candidate.scores.every(
+      (score) => Boolean(score) && Array.isArray(score.criteria),
+    ) &&
     Array.isArray(candidate.recommendations)
   );
 }
@@ -288,13 +103,17 @@ export function RepoAnalyzer() {
   return (
     <section
       className="analyzer-shell"
+      id="analyze"
       aria-label="Analisador de repositório"
       aria-busy={loading}
     >
       <form className="command-card" onSubmit={analyze}>
         <div className="command-heading">
-          <span className="section-kicker">ANALISAR REPOSITÓRIO</span>
-          <span className="command-hint">somente repositórios públicos</span>
+          <div>
+            <span className="section-kicker">ANALISAR</span>
+            <h2>Qual repositório você quer diagnosticar?</h2>
+          </div>
+          <span className="command-hint">repositórios públicos</span>
         </div>
 
         <label className="sr-only" htmlFor="repo-input">
@@ -325,7 +144,7 @@ export function RepoAnalyzer() {
               </>
             ) : (
               <>
-                Analisar
+                Gerar diagnóstico
                 <span className="button-arrow" aria-hidden="true">
                   ↗
                 </span>
@@ -339,7 +158,7 @@ export function RepoAnalyzer() {
         </p>
 
         <div className="example-row" aria-label="Exemplos de repositório">
-          <span>EXEMPLOS</span>
+          <span>TESTAR COM</span>
           {EXAMPLES.map((example) => (
             <button
               className="example-chip"
@@ -354,55 +173,14 @@ export function RepoAnalyzer() {
 
         {error ? (
           <div className="form-error" id="repo-error" role="alert">
-            <strong>Não foi possível analisar</strong>
+            <strong>Análise interrompida</strong>
             <span>{error}</span>
           </div>
         ) : null}
       </form>
 
-      {!analysis && !loading ? <SignalsPreview /> : null}
       {loading ? <LoadingState /> : null}
       {analysis ? <AnalysisDashboard analysis={analysis} /> : null}
-    </section>
-  );
-}
-
-function SignalsPreview() {
-  return (
-    <section className="signals-preview" aria-labelledby="signals-preview-title">
-      <span className="ghost-word" aria-hidden="true">
-        EVIDENCE
-      </span>
-
-      <div className="preview-heading">
-        <div>
-          <span className="section-kicker">O QUE ANALISAMOS</span>
-          <h2 id="signals-preview-title">
-            Sinais técnicos,
-            <br />
-            não impressões.
-          </h2>
-        </div>
-        <p>
-          Cada conclusão nasce de evidências verificáveis na estrutura pública
-          do repositório. Antes da primeira análise, nenhum score é inventado.
-        </p>
-      </div>
-
-      <div className="preview-grid">
-        {PREVIEW_GROUPS.map((group) => (
-          <article className="signal-card" key={group.title}>
-            <span className="signal-index">{group.index}</span>
-            <div>
-              <h3>{group.title}</h3>
-              <p>{group.description}</p>
-            </div>
-            <span className="signal-card-arrow" aria-hidden="true">
-              ↗
-            </span>
-          </article>
-        ))}
-      </div>
     </section>
   );
 }
@@ -413,8 +191,10 @@ function LoadingState() {
       <div className="loading-copy">
         <span className="button-status-dot" aria-hidden="true" />
         <div>
-          <strong>Lendo sinais verificáveis</strong>
-          <p>Metadados, linguagens e árvore do repositório.</p>
+          <strong>Lendo o repositório</strong>
+          <p>
+            Metadados, linguagens, árvore de arquivos e critérios de engenharia.
+          </p>
         </div>
       </div>
 
@@ -437,37 +217,59 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
         <div className="result-identity">
           <div className="result-status">
             <span className="status-dot" aria-hidden="true" />
-            análise concluída
+            diagnóstico concluído
           </div>
+
           <h2 id="result-title">{repository.fullName}</h2>
+
           <p>
             {repository.description ??
               "Este repositório ainda não possui uma descrição pública."}
           </p>
-          <a
-            href={repository.url}
-            target="_blank"
-            rel="noreferrer"
-            className="secondary-button"
-          >
-            Abrir no GitHub
-            <span className="button-arrow" aria-hidden="true">
-              ↗
-            </span>
-          </a>
+
+          <div className="result-actions">
+            <a
+              href={repository.url}
+              target="_blank"
+              rel="noreferrer"
+              className="secondary-button"
+            >
+              Abrir no GitHub
+              <span className="button-arrow" aria-hidden="true">
+                ↗
+              </span>
+            </a>
+
+            {repository.homepage ? (
+              <a
+                href={repository.homepage}
+                target="_blank"
+                rel="noreferrer"
+                className="text-link"
+              >
+                Abrir homepage ↗
+              </a>
+            ) : null}
+          </div>
         </div>
 
         <div className="score-hero" data-tone={scoreTone(analysis.overallScore)}>
-          <span className="score-label">SCORE GERAL</span>
+          <div className="score-header">
+            <span className="score-label">ÍNDICE GERAL</span>
+            <span className="score-grade">Faixa {analysis.grade}</span>
+          </div>
+
           <div className="score-number">
             <strong>{analysis.overallScore}</strong>
             <span>/100</span>
           </div>
+
           <div className="score-meter" style={scoreStyle(analysis.overallScore)}>
             <span />
           </div>
+
           <div className="score-meta">
-            <span>GRADE {analysis.grade}</span>
+            <span>5 PILARES · PESO IGUAL</span>
             <span>CONFIANÇA {confidence.toUpperCase()}</span>
           </div>
         </div>
@@ -486,14 +288,15 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
       </section>
 
       <section className="evidence-section" aria-labelledby="evidence-title">
-        <div className="section-heading editorial">
+        <div className="section-intro">
           <div>
-            <span className="section-kicker">EVIDENCE-FIRST UI</span>
-            <h2 id="evidence-title">Por que o RepoLens concluiu isso?</h2>
+            <span className="section-kicker">CRITÉRIOS & EVIDÊNCIAS</span>
+            <h2 id="evidence-title">De onde veio cada ponto.</h2>
           </div>
+
           <p>
-            Cada score abaixo mostra os sinais que contribuíram para o
-            diagnóstico e as referências técnicas encontradas.
+            O score não é uma opinião. Cada linha mostra o peso máximo, os
+            pontos obtidos e a evidência que sustentou o resultado.
           </p>
         </div>
 
@@ -501,7 +304,6 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
           {analysis.scores.map((score, index) => (
             <CategoryPanel
               key={score.key}
-              analysis={analysis}
               score={score}
               index={index + 1}
             />
@@ -513,8 +315,8 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
         <section className="surface-section" aria-labelledby="signals-title">
           <div className="section-heading compact">
             <div>
-              <span className="section-kicker">SINAIS</span>
-              <h2 id="signals-title">Leitura rápida</h2>
+              <span className="section-kicker">CHECKLIST</span>
+              <h2 id="signals-title">Controles detectados</h2>
             </div>
           </div>
 
@@ -524,8 +326,8 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
         <section className="surface-section" aria-labelledby="languages-title">
           <div className="section-heading compact">
             <div>
-              <span className="section-kicker">LINGUAGENS</span>
-              <h2 id="languages-title">Distribuição</h2>
+              <span className="section-kicker">STACK</span>
+              <h2 id="languages-title">Linguagens principais</h2>
             </div>
           </div>
 
@@ -553,12 +355,15 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
         className="recommendations-section"
         aria-labelledby="recommendations-title"
       >
-        <div className="section-heading editorial">
+        <div className="section-intro">
           <div>
-            <span className="section-kicker">PRÓXIMAS MELHORIAS</span>
-            <h2 id="recommendations-title">Onde agir primeiro.</h2>
+            <span className="section-kicker">PRIORIDADES</span>
+            <h2 id="recommendations-title">O que vale corrigir primeiro.</h2>
           </div>
-          <p>Ordenado por impacto técnico, sem recomendações genéricas.</p>
+          <p>
+            A fila é ordenada por severidade e aponta apenas lacunas detectadas
+            no repositório analisado.
+          </p>
         </div>
 
         {analysis.recommendations.length ? (
@@ -587,8 +392,8 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
           <div className="perfect-state">
             <span className="status-dot" aria-hidden="true" />
             <div>
-              <strong>Nenhuma recomendação básica pendente.</strong>
-              <p>O repositório atende a todos os sinais avaliados pelo MVP.</p>
+              <strong>Nenhuma lacuna básica detectada.</strong>
+              <p>O repositório atende aos critérios avaliados pelo modelo atual.</p>
             </div>
           </div>
         )}
@@ -599,7 +404,7 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
           ANALISADO {formatDate(analysis.analyzedAt)} · {repository.visibility}
         </span>
         <span>
-          ORIGEM · GITHUB REST API + ÁRVORE DE ARQUIVOS · CONFIANÇA {confidence}
+          GITHUB REST API · ÁRVORE DE ARQUIVOS · CONFIANÇA {confidence}
         </span>
       </div>
     </div>
@@ -607,16 +412,12 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
 }
 
 function CategoryPanel({
-  analysis,
   score,
   index,
 }: {
-  analysis: RepoAnalysis;
   score: RepoAnalysis["scores"][number];
   index: number;
 }) {
-  const category = CATEGORY_COPY[score.key];
-
   return (
     <article
       className="category-panel"
@@ -625,10 +426,15 @@ function CategoryPanel({
     >
       <div className="category-score">
         <span className="category-index">{String(index).padStart(2, "0")}</span>
-        <div>
-          <h3 id={`category-${score.key}`}>{score.label}</h3>
-          <p>{category.description}</p>
+
+        <div className="category-copy">
+          <div className="category-title-row">
+            <h3 id={`category-${score.key}`}>{score.label}</h3>
+            <span>{score.summary}</span>
+          </div>
+          <p>{score.description}</p>
         </div>
+
         <strong>{score.score}</strong>
       </div>
 
@@ -636,46 +442,47 @@ function CategoryPanel({
         <span />
       </div>
 
-      <div className="evidence-list">
-        {category.definitions.map((definition) => {
-          const present = signalPresent(analysis, definition);
-          const paths = definition.evidence
-            ? analysis.evidence[definition.evidence]
-            : [];
-          const detail = definition.detail?.(analysis);
+      <div className="criteria-table">
+        {score.criteria.map((item) => (
+          <div className="criterion-row" key={item.id}>
+            <div className="criterion-status">
+              <span
+                className={item.met ? "evidence-icon yes" : "evidence-icon no"}
+                aria-hidden="true"
+              >
+                {item.met ? "✓" : "–"}
+              </span>
 
-          return (
-            <div className="evidence-row" key={definition.label}>
-              <div className="evidence-status">
-                <span
-                  className={present ? "evidence-icon yes" : "evidence-icon no"}
-                  aria-hidden="true"
-                >
-                  {present ? "✓" : "–"}
-                </span>
-                <div>
-                  <strong>{definition.label}</strong>
-                  <small>{present ? "Detectado" : "Ausente"}</small>
-                </div>
-              </div>
-
-              <div className="evidence-references">
-                {paths.length
-                  ? paths.slice(0, 3).map((path) => (
-                      <code key={path} title={path}>
-                        {path}
-                      </code>
-                    ))
-                  : detail
-                    ? <span>{detail}</span>
-                    : <span className="evidence-empty">sem referência detectada</span>}
-                {paths.length > 3 ? (
-                  <small>+{paths.length - 3} referências</small>
-                ) : null}
+              <div>
+                <strong>{item.label}</strong>
+                <small>{item.detail ?? (item.met ? "Detectado" : "Ausente")}</small>
               </div>
             </div>
-          );
-        })}
+
+            <div className="criterion-evidence">
+              {item.evidence.length ? (
+                item.evidence.slice(0, 2).map((path) => (
+                  <code key={path} title={path}>
+                    {path}
+                  </code>
+                ))
+              ) : (
+                <span className="criterion-no-file">
+                  {item.detail ? "metadado do GitHub" : "sem arquivo associado"}
+                </span>
+              )}
+
+              {item.evidence.length > 2 ? (
+                <small>+{item.evidence.length - 2}</small>
+              ) : null}
+            </div>
+
+            <div className="criterion-points">
+              <strong>{item.points}</strong>
+              <span>/ {item.maxPoints} pts</span>
+            </div>
+          </div>
+        ))}
       </div>
     </article>
   );
@@ -684,11 +491,11 @@ function CategoryPanel({
 function SignalSummary({ analysis }: { analysis: RepoAnalysis }) {
   const items = [
     ["README", analysis.signals.readme],
-    ["CI/CD", analysis.signals.workflows > 0],
-    ["TESTS", analysis.signals.tests],
-    ["SECURITY", analysis.signals.securityPolicy],
-    ["DEPENDENCIES", analysis.signals.lockfile],
-    ["CODEQL", analysis.signals.codeql],
+    ["GitHub Actions", analysis.signals.workflows > 0],
+    ["Testes", analysis.signals.tests],
+    ["SECURITY.md", analysis.signals.securityPolicy],
+    ["Lockfile", analysis.signals.lockfile],
+    ["CodeQL", analysis.signals.codeql],
   ] as const;
 
   return (
@@ -699,7 +506,7 @@ function SignalSummary({ analysis }: { analysis: RepoAnalysis }) {
             {present ? "✓" : "–"}
           </span>
           <span>{label}</span>
-          <small>{present ? "detected" : "missing"}</small>
+          <small>{present ? "detectado" : "ausente"}</small>
         </div>
       ))}
     </div>

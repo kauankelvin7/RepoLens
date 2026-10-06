@@ -1,0 +1,47 @@
+:root {
+  --color-bg: #07090e;
+  --color-bg-subtle: #0a0d14;
+  --color-surface: #0e121a;
+  --color-surface-raised: #121823;
+  --color-surface-hover: #171e2a;
+
+  --color-text: #f3f5f8;
+  --color-text-secondary: #a0a7b4;
+  --color-text-muted: #687181;
+
+  --color-brand: #a3ff55;
+  --color-brand-hover: #b6ff77;
+  --color-brand-soft: rgba(163, 255, 85, 0.1);
+
+  --color-line: #1b2330;
+  --color-line-strong: #2b3545;
+
+  --color-danger: #ff667e;
+  --color-warning: #f6c85d;
+  --color-info: #79aaff;
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  --radius-pill: 999rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  --layout-max: 1180px;
+  --header-height: 4.75rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.25, 1, 0.5, 1);
+}
