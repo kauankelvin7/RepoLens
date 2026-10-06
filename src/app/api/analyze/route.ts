@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 
 import { analyzeSnapshot } from "@/lib/analyzer";
 import { fetchRepositorySnapshot, toPublicGitHubError } from "@/lib/github";
-import { getInstallationToken } from "@/lib/github-app";
+import {
+  getInstallationToken,
+  getRepositoryInstallationToken,
+  isGitHubAppAuthConfigured,
+} from "@/lib/github-app";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { parseRepoReference } from "@/lib/repo-input";
 
@@ -67,6 +71,15 @@ export async function POST(request: Request) {
         );
       }
       token = await getInstallationToken(body.installationId);
+    } else if (isGitHubAppAuthConfigured()) {
+      try {
+        token =
+          (await getRepositoryInstallationToken(parsed.owner, parsed.repo)) ??
+          token;
+      } catch {
+        // Public analysis must keep working even if App auth is temporarily
+        // unavailable. The regular server token/anonymous path remains valid.
+      }
     }
 
     const snapshot = await fetchRepositorySnapshot(
