@@ -3,6 +3,7 @@ import type {
   LanguageShare,
   Recommendation,
   RepoAnalysis,
+  RepositoryEvidence,
   RepositorySignals,
   ScoreBreakdown,
   ScoreKey,
@@ -10,7 +11,7 @@ import type {
 
 const SCORE_LABELS: Record<ScoreKey, string> = {
   documentation: "Documentação",
-  automation: "Automação",
+  automation: "CI/CD",
   security: "Segurança",
   maintenance: "Manutenção",
   engineering: "Engenharia",
@@ -18,10 +19,6 @@ const SCORE_LABELS: Record<ScoreKey, string> = {
 
 function clamp(score: number) {
   return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function hasAny(paths: string[], patterns: RegExp[]) {
-  return paths.some((path) => patterns.some((pattern) => pattern.test(path)));
 }
 
 function scoreSummary(score: number) {
@@ -78,33 +75,39 @@ export function analyzeSnapshot(
   now = new Date(),
 ): RepoAnalysis {
   const repository = snapshot.repository;
-  const paths = snapshot.paths.map((path) => path.toLowerCase());
+  const rawPaths = snapshot.paths;
+  const paths = rawPaths.map((path) => path.toLowerCase());
 
-  const workflowPaths = paths.filter((path) =>
-    /^\.github\/workflows\/[^/]+\.(yml|yaml)$/.test(path),
-  );
+  const matchingPaths = (patterns: RegExp[]) =>
+    rawPaths
+      .filter((_, index) =>
+        patterns.some((pattern) => pattern.test(paths[index])),
+      )
+      .slice(0, 10);
 
-  const signals: RepositorySignals = {
-    readme: hasAny(paths, [/^readme(?:\.|$)/]),
-    license:
-      Boolean(repository.license?.spdx_id || repository.license?.name) ||
-      hasAny(paths, [/^license(?:\.|$)/, /^copying(?:\.|$)/]),
-    contributing: hasAny(paths, [
+  const evidence: RepositoryEvidence = {
+    readme: matchingPaths([/^readme(?:\.|$)/]),
+    license: matchingPaths([/^license(?:\.|$)/, /^copying(?:\.|$)/]),
+    contributing: matchingPaths([
       /^contributing(?:\.|$)/,
       /^\.github\/contributing(?:\.|$)/,
     ]),
-    codeOfConduct: hasAny(paths, [
+    codeOfConduct: matchingPaths([
       /^code_of_conduct(?:\.|$)/,
       /^\.github\/code_of_conduct(?:\.|$)/,
     ]),
-    securityPolicy: hasAny(paths, [
+    securityPolicy: matchingPaths([
       /^security(?:\.|$)/,
       /^\.github\/security(?:\.|$)/,
     ]),
-    workflows: workflowPaths.length,
-    codeql: workflowPaths.some((path) => path.includes("codeql")),
-    dependabot: paths.includes(".github/dependabot.yml"),
-    lockfile: hasAny(paths, [
+    workflows: matchingPaths([
+      /^\.github\/workflows\/[^/]+\.(yml|yaml)$/,
+    ]),
+    codeql: matchingPaths([
+      /^\.github\/workflows\/[^/]*codeql[^/]*\.(yml|yaml)$/,
+    ]),
+    dependabot: matchingPaths([/^\.github\/dependabot\.yml$/]),
+    lockfile: matchingPaths([
       /(^|\/)package-lock\.json$/,
       /(^|\/)pnpm-lock\.yaml$/,
       /(^|\/)yarn\.lock$/,
@@ -116,23 +119,40 @@ export function analyzeSnapshot(
       /(^|\/)composer\.lock$/,
       /(^|\/)gemfile\.lock$/,
     ]),
-    tests: hasAny(paths, [
+    tests: matchingPaths([
       /(^|\/)(__tests__|tests?|specs?)(\/|$)/,
       /\.(test|spec)\.[a-z0-9]+$/,
     ]),
-    issueTemplates: paths.some((path) =>
-      path.startsWith(".github/issue_template/"),
-    ),
-    pullRequestTemplate: hasAny(paths, [
+    issueTemplates: matchingPaths([/^\.github\/issue_template\//]),
+    pullRequestTemplate: matchingPaths([
       /^\.github\/pull_request_template(?:\.|\/)/,
       /^pull_request_template(?:\.|$)/,
     ]),
-    docsDirectory: paths.some((path) => path.startsWith("docs/")),
-    envExample: hasAny(paths, [
+    docsDirectory: matchingPaths([/^docs\//]),
+    envExample: matchingPaths([
       /(^|\/)\.env\.example$/,
       /(^|\/)\.env\.sample$/,
       /(^|\/)example\.env$/,
     ]),
+  };
+
+  const signals: RepositorySignals = {
+    readme: evidence.readme.length > 0,
+    license:
+      Boolean(repository.license?.spdx_id || repository.license?.name) ||
+      evidence.license.length > 0,
+    contributing: evidence.contributing.length > 0,
+    codeOfConduct: evidence.codeOfConduct.length > 0,
+    securityPolicy: evidence.securityPolicy.length > 0,
+    workflows: evidence.workflows.length,
+    codeql: evidence.codeql.length > 0,
+    dependabot: evidence.dependabot.length > 0,
+    lockfile: evidence.lockfile.length > 0,
+    tests: evidence.tests.length > 0,
+    issueTemplates: evidence.issueTemplates.length > 0,
+    pullRequestTemplate: evidence.pullRequestTemplate.length > 0,
+    docsDirectory: evidence.docsDirectory.length > 0,
+    envExample: evidence.envExample.length > 0,
     typedLanguage: Object.keys(snapshot.languages).some((language) =>
       [
         "typescript",
@@ -349,6 +369,7 @@ export function analyzeSnapshot(
     grade: gradeFor(overallScore),
     scores,
     signals,
+    evidence,
     languages: languageShares(snapshot.languages),
     recommendations: recommendations.slice(0, 8),
     analyzedAt: now.toISOString(),

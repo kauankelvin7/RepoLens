@@ -56,6 +56,12 @@ describe("analyzeSnapshot", () => {
     expect(result.grade).toBe("A");
     expect(result.signals.tests).toBe(true);
     expect(result.signals.codeql).toBe(true);
+    expect(result.evidence.readme).toEqual(["README.md"]);
+    expect(result.evidence.workflows).toEqual([
+      ".github/workflows/ci.yml",
+      ".github/workflows/codeql.yml",
+    ]);
+    expect(result.evidence.tests).toContain("tests/analyzer.test.ts");
     expect(result.recommendations).toHaveLength(0);
   });
 

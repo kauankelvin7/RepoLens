@@ -65,12 +65,30 @@ export interface RepositorySignals {
   treeTruncated: boolean;
 }
 
+export interface RepositoryEvidence {
+  readme: string[];
+  license: string[];
+  contributing: string[];
+  codeOfConduct: string[];
+  securityPolicy: string[];
+  workflows: string[];
+  codeql: string[];
+  dependabot: string[];
+  lockfile: string[];
+  tests: string[];
+  issueTemplates: string[];
+  pullRequestTemplate: string[];
+  docsDirectory: string[];
+  envExample: string[];
+}
+
 export interface RepoAnalysis {
   repository: RepositorySummary;
   overallScore: number;
   grade: "A" | "B" | "C" | "D" | "F";
   scores: ScoreBreakdown[];
   signals: RepositorySignals;
+  evidence: RepositoryEvidence;
   languages: LanguageShare[];
   recommendations: Recommendation[];
   analyzedAt: string;
