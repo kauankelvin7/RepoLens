@@ -1,8 +1,15 @@
 # RepoLens
 
-**Repository health, without the hand-waving.**
+**Repository health, built on evidence.**
 
-RepoLens analyzes a public GitHub repository and turns objective engineering signals into a practical health report. It focuses on documentation, automation, security, maintenance, and engineering quality without sending source code to an external AI model. Private repositories are intentionally not exposed by the public analyzer; they will require explicit user authorization in a future version.
+[![Live](https://img.shields.io/badge/Live-repolens--zeta.vercel.app-000?style=flat-square&logo=vercel)](https://repolens-zeta.vercel.app)
+![CI](https://img.shields.io/github/actions/workflow/status/kauankelvin7/RepoLens/ci.yml?branch=main&label=CI&style=flat-square)
+![CodeQL](https://img.shields.io/github/actions/workflow/status/kauankelvin7/RepoLens/codeql.yml?branch=main&label=CodeQL&style=flat-square)
+![License](https://img.shields.io/github/license/kauankelvin7/RepoLens?style=flat-square)
+
+RepoLens analyzes a public GitHub repository and turns objective engineering signals into an evidence-first health report. Every score is tied to observable repository signals and real file references where available. It focuses on documentation, CI/CD, security, maintenance, and engineering quality without sending source code to an external AI model.
+
+Private repositories are intentionally not exposed by the public analyzer; they will require an explicit user-authorization flow in a future version.
 
 ## What it evaluates
 
@@ -14,6 +21,16 @@ RepoLens analyzes a public GitHub repository and turns objective engineering sig
 - Repository activity and metadata quality
 - Language distribution and typed-language signals
 - Prioritized, explainable recommendations
+
+## Evidence-first analysis
+
+The UI is designed around one question:
+
+> Why did RepoLens reach this conclusion?
+
+For each engineering category, RepoLens surfaces detected/missing signals and the repository files that support the result, such as `README.md`, test files, GitHub Actions workflows, `SECURITY.md`, Dependabot configuration and lockfiles.
+
+This keeps the product deterministic and auditable: no hidden model decides whether a repository is "good".
 
 ## Architecture
 
@@ -31,7 +48,8 @@ Browser
   -> validation + rate limit
   -> GitHub REST API
   -> deterministic scoring engine
-  -> dashboard
+  -> evidence extraction
+  -> evidence-first dashboard
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for trust boundaries and design decisions.
@@ -61,7 +79,9 @@ GitHub Actions runs the same checks on pushes and pull requests. CodeQL and Depe
 
 ## GitHub App
 
-RepoLens includes:
+RepoLens is also deployed as a real GitHub App integration.
+
+It includes:
 
 - RS256 GitHub App JWT generation
 - installation discovery and installation token primitives
@@ -69,6 +89,7 @@ RepoLens includes:
 - an App configuration status endpoint
 - a signed webhook endpoint at `/api/webhooks/github`
 - repository-scoped cache invalidation on signed GitHub webhook events
+- production App authentication validation through `/api/app/status`
 
 See [docs/GITHUB_APP.md](docs/GITHUB_APP.md) for the recommended permissions and setup.
 
