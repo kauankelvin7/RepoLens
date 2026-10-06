@@ -2,7 +2,7 @@
 
 **Repository health, without the hand-waving.**
 
-RepoLens analyzes a GitHub repository and turns objective engineering signals into a practical health report. It focuses on documentation, automation, security, maintenance, and engineering quality without sending source code to an external AI model.
+RepoLens analyzes a public GitHub repository and turns objective engineering signals into a practical health report. It focuses on documentation, automation, security, maintenance, and engineering quality without sending source code to an external AI model. Private repositories are intentionally not exposed by the public analyzer; they will require explicit user authorization in a future version.
 
 ## What it evaluates
 

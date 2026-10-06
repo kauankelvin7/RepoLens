@@ -23,6 +23,8 @@ Only three GitHub API requests are needed for a normal analysis.
 ## Trust boundaries
 
 - The browser never receives a GitHub token or GitHub App private key.
+- The public analyzer never uses GitHub App installation tokens, preventing anonymous access to installed private repositories.
+- Private-repository analysis is deferred until an explicit user-authorization flow exists.
 - Repository references are validated before being interpolated into API paths.
 - Server requests use a bounded timeout.
 - Webhook bodies are verified with HMAC SHA-256 and constant-time comparison.

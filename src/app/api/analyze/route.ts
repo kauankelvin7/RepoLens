@@ -2,11 +2,6 @@ import { NextResponse } from "next/server";
 
 import { analyzeSnapshot } from "@/lib/analyzer";
 import { fetchRepositorySnapshot, toPublicGitHubError } from "@/lib/github";
-import {
-  getInstallationToken,
-  getRepositoryInstallationToken,
-  isGitHubAppAuthConfigured,
-} from "@/lib/github-app";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { parseRepoReference } from "@/lib/repo-input";
 
@@ -33,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { repo?: unknown; installationId?: unknown };
+  let body: { repo?: unknown };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -58,35 +53,26 @@ export async function POST(request: Request) {
   }
 
   try {
-    let token = process.env.GITHUB_TOKEN;
-
-    if (body.installationId !== undefined) {
-      if (
-        typeof body.installationId !== "number" ||
-        !Number.isInteger(body.installationId)
-      ) {
-        return NextResponse.json(
-          { error: "Installation ID inválido." },
-          { status: 400 },
-        );
-      }
-      token = await getInstallationToken(body.installationId);
-    } else if (isGitHubAppAuthConfigured()) {
-      try {
-        token =
-          (await getRepositoryInstallationToken(parsed.owner, parsed.repo)) ??
-          token;
-      } catch {
-        // Public analysis must keep working even if App auth is temporarily
-        // unavailable. The regular server token/anonymous path remains valid.
-      }
-    }
-
+    // Public analysis intentionally never uses GitHub App installation tokens.
+    // This prevents anonymous callers from accessing private repositories that
+    // may have installed the RepoLens GitHub App. GITHUB_TOKEN, when provided,
+    // must be scoped to public repositories only.
     const snapshot = await fetchRepositorySnapshot(
       parsed.owner,
       parsed.repo,
-      token,
+      process.env.GITHUB_TOKEN,
     );
+
+    if (snapshot.repository.private) {
+      return NextResponse.json(
+        {
+          error:
+            "Repositórios privados exigirão autorização explícita em uma versão futura.",
+        },
+        { status: 403 },
+      );
+    }
+
     const analysis = analyzeSnapshot(snapshot);
 
     return NextResponse.json(analysis, {
