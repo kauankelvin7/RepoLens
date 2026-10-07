@@ -7,7 +7,7 @@
 ![CodeQL](https://img.shields.io/github/actions/workflow/status/kauankelvin7/RepoLens/codeql.yml?branch=main&label=CodeQL&style=flat-square)
 ![License](https://img.shields.io/github/license/kauankelvin7/RepoLens?style=flat-square)
 
-RepoLens analyzes a public GitHub repository and turns objective engineering signals into an evidence-first health report. Every score is tied to observable repository signals and real file references where available. It focuses on documentation, CI/CD, security, maintenance, and engineering quality without sending source code to an external AI model.
+RepoLens analyzes a public GitHub repository and turns objective engineering signals into an evidence-first health report. Every score is tied to observable repository signals and real file references where available. It focuses on documentation, CI/CD, observable security controls, maintenance, and engineering quality without sending source code to an external AI model.
 
 Private repositories are intentionally not exposed by the public analyzer; they will require an explicit user-authorization flow in a future version.
 
@@ -17,10 +17,13 @@ Private repositories are intentionally not exposed by the public analyzer; they 
 - GitHub Actions workflows and test presence
 - Dependabot and CodeQL configuration
 - SECURITY.md, environment examples and lockfiles
+- Security-focused tests, security documentation and recognizable access-policy files
 - Issue and pull request templates
 - Repository activity and metadata quality
 - Language distribution and typed-language signals
 - Prioritized, explainable recommendations
+
+> The **Security Controls** pillar measures repository-level controls visible from public metadata and file paths. It is not a vulnerability scanner, penetration test, runtime assessment, or certification that an application is secure.
 
 ## Evidence-first analysis
 

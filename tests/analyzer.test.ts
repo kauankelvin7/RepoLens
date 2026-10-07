@@ -33,7 +33,10 @@ function snapshot(overrides: Partial<GitHubSnapshot> = {}): GitHubSnapshot {
       ".env.example",
       "package-lock.json",
       "tests/analyzer.test.ts",
+      "tests/security-headers.test.ts",
       "docs/ARCHITECTURE.md",
+      "docs/security/THREAT_MODEL.md",
+      "firestore.rules",
       ".github/dependabot.yml",
       ".github/workflows/ci.yml",
       ".github/workflows/codeql.yml",
@@ -56,6 +59,10 @@ describe("analyzeSnapshot", () => {
     expect(result.grade).toBe("A");
     expect(result.signals.tests).toBe(true);
     expect(result.signals.codeql).toBe(true);
+    expect(result.signals.dependencyUpdates).toBe(true);
+    expect(result.signals.securityTests).toBe(true);
+    expect(result.signals.securityDocs).toBe(true);
+    expect(result.signals.accessPolicies).toBe(true);
     expect(result.evidence.readme).toEqual(["README.md"]);
     expect(result.evidence.workflows).toEqual([
       ".github/workflows/ci.yml",
@@ -74,6 +81,43 @@ describe("analyzeSnapshot", () => {
       ).toBe(100);
     }
     expect(result.recommendations).toHaveLength(0);
+  });
+
+  it("frames repository security as observable coverage, not a vulnerability verdict", () => {
+    const partial = snapshot({
+      paths: [
+        ".env.example",
+        "package-lock.json",
+        ".github/workflows/ci.yml",
+        "tests/security-rules.test.ts",
+        "docs/security/SECURITY-AUDIT.md",
+        "firestore.rules",
+      ],
+    });
+
+    const result = analyzeSnapshot(
+      partial,
+      new Date("2026-10-05T12:00:00Z"),
+    );
+    const security = result.scores.find((score) => score.key === "security");
+
+    expect(security?.label).toBe("Controles de segurança");
+    expect(security?.score).toBe(50);
+    expect(security?.summary).toBe("Cobertura parcial");
+    expect(security?.description).toContain("Não é pentest");
+  });
+
+  it("accepts Renovate as an automated dependency update control", () => {
+    const result = analyzeSnapshot(
+      snapshot({
+        paths: ["renovate.json"],
+      }),
+      new Date("2026-10-05T12:00:00Z"),
+    );
+
+    expect(result.signals.dependabot).toBe(false);
+    expect(result.signals.dependencyUpdates).toBe(true);
+    expect(result.evidence.dependencyUpdates).toEqual(["renovate.json"]);
   });
 
   it("prioritizes fundamental gaps", () => {

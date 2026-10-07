@@ -25,9 +25,9 @@ const SCORE_META: Record<
       "Validação automática, testes e controles de dependências no fluxo de entrega.",
   },
   security: {
-    label: "Segurança",
+    label: "Controles de segurança",
     description:
-      "Políticas e automações que reduzem exposição a falhas e dependências vulneráveis.",
+      "Cobertura de controles públicos e versionados do repositório. Não é pentest nem certifica ausência de vulnerabilidades.",
   },
   maintenance: {
     label: "Manutenção",
@@ -45,7 +45,15 @@ function clamp(score: number) {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-function scoreSummary(score: number) {
+function scoreSummary(key: ScoreKey, score: number) {
+  if (key === "security") {
+    if (score >= 90) return "Cobertura ampla";
+    if (score >= 75) return "Cobertura forte";
+    if (score >= 60) return "Boa cobertura";
+    if (score >= 40) return "Cobertura parcial";
+    return "Poucos sinais públicos";
+  }
+
   if (score >= 90) return "Excelente";
   if (score >= 75) return "Sólido";
   if (score >= 60) return "Bom, com lacunas";
@@ -108,7 +116,7 @@ function makeScore(
     label: SCORE_META[key].label,
     description: SCORE_META[key].description,
     score,
-    summary: scoreSummary(score),
+    summary: scoreSummary(key, score),
     criteria,
   };
 }
@@ -188,7 +196,12 @@ export function analyzeSnapshot(
     codeql: matchingPaths([
       /^\.github\/workflows\/[^/]*codeql[^/]*\.(yml|yaml)$/,
     ]),
-    dependabot: matchingPaths([/^\.github\/dependabot\.yml$/]),
+    dependabot: matchingPaths([/^\.github\/dependabot\.(yml|yaml)$/]),
+    dependencyUpdates: matchingPaths([
+      /^\.github\/dependabot\.(yml|yaml)$/,
+      /(^|\/)renovate\.json5?$/,
+      /(^|\/)\.renovaterc(?:\.json5?)?$/,
+    ]),
     lockfile: matchingPaths([
       /(^|\/)package-lock\.json$/,
       /(^|\/)pnpm-lock\.yaml$/,
@@ -204,6 +217,18 @@ export function analyzeSnapshot(
     tests: matchingPaths([
       /(^|\/)(__tests__|tests?|specs?)(\/|$)/,
       /\.(test|spec)\.[a-z0-9]+$/,
+    ]),
+    securityTests: matchingPaths([
+      /(^|\/)[^/]*(security|auth|authorization|permission|csp|header|rules)[^/]*\.(test|spec)\.[a-z0-9]+$/,
+    ]),
+    securityDocs: matchingPaths([
+      /^docs\/security\//,
+      /(^|\/)(security[-_.]?audit|threat[-_.]?model|security[-_.]?review)(?:\.|\/)/,
+    ]),
+    accessPolicies: matchingPaths([
+      /(^|\/)firestore\.rules$/,
+      /(^|\/)storage\.rules$/,
+      /(^|\/)[^/]+\.rego$/,
     ]),
     issueTemplates: matchingPaths([/^\.github\/issue_template\//]),
     pullRequestTemplate: matchingPaths([
@@ -229,8 +254,12 @@ export function analyzeSnapshot(
     workflows: evidence.workflows.length,
     codeql: evidence.codeql.length > 0,
     dependabot: evidence.dependabot.length > 0,
+    dependencyUpdates: evidence.dependencyUpdates.length > 0,
     lockfile: evidence.lockfile.length > 0,
     tests: evidence.tests.length > 0,
+    securityTests: evidence.securityTests.length > 0,
+    securityDocs: evidence.securityDocs.length > 0,
+    accessPolicies: evidence.accessPolicies.length > 0,
     issueTemplates: evidence.issueTemplates.length > 0,
     pullRequestTemplate: evidence.pullRequestTemplate.length > 0,
     docsDirectory: evidence.docsDirectory.length > 0,
@@ -351,11 +380,11 @@ export function analyzeSnapshot(
       evidence.lockfile,
     ),
     booleanCriterion(
-      "dependabot",
-      "Dependabot",
+      "dependency-updates",
+      "Atualização de dependências",
       10,
-      signals.dependabot,
-      evidence.dependabot,
+      signals.dependencyUpdates,
+      evidence.dependencyUpdates,
     ),
     booleanCriterion(
       "codeql",
@@ -366,20 +395,31 @@ export function analyzeSnapshot(
     ),
   ];
 
+  const versionedSecurityKinds = [
+    signals.securityTests,
+    signals.securityDocs,
+    signals.accessPolicies,
+  ].filter(Boolean).length;
+  const versionedSecurityEvidence = [
+    ...evidence.securityTests,
+    ...evidence.securityDocs,
+    ...evidence.accessPolicies,
+  ].slice(0, 10);
+
   const securityCriteria: ScoreCriterion[] = [
     booleanCriterion(
       "security-policy",
       "Política de segurança",
-      30,
+      20,
       signals.securityPolicy,
       evidence.securityPolicy,
     ),
     booleanCriterion(
-      "dependabot",
-      "Dependabot",
-      25,
-      signals.dependabot,
-      evidence.dependabot,
+      "dependency-updates",
+      "Atualização de dependências",
+      15,
+      signals.dependencyUpdates,
+      evidence.dependencyUpdates,
     ),
     booleanCriterion(
       "lockfile",
@@ -391,17 +431,27 @@ export function analyzeSnapshot(
     booleanCriterion(
       "codeql",
       "CodeQL",
-      20,
+      15,
       signals.codeql,
       evidence.codeql,
     ),
     booleanCriterion(
       "env-example",
       "Exemplo de ambiente",
-      10,
+      5,
       signals.envExample,
       evidence.envExample,
     ),
+    criterion({
+      id: "versioned-security-evidence",
+      label: "Evidências de segurança versionadas",
+      maxPoints: 30,
+      points: versionedSecurityKinds * 10,
+      evidence: versionedSecurityEvidence,
+      detail: versionedSecurityKinds
+        ? `${versionedSecurityKinds}/3 tipos detectados`
+        : null,
+    }),
   ];
 
   const maintenanceCriteria: ScoreCriterion[] = [
@@ -565,12 +615,12 @@ export function analyzeSnapshot(
       ),
     );
 
-  if (!signals.dependabot)
+  if (!signals.dependencyUpdates)
     recommendations.push(
       recommendation(
-        "dependabot",
-        "Ative atualizações de dependências",
-        "Use Dependabot para reduzir o tempo de exposição a dependências vulneráveis.",
+        "dependency-updates",
+        "Automatize atualizações de dependências",
+        "Configure Dependabot, Renovate ou equivalente para reduzir o tempo de exposição a dependências vulneráveis.",
         "medium",
         "security",
       ),

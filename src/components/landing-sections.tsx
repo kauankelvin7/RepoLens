@@ -13,9 +13,10 @@ const PILLARS = [
   },
   {
     index: "03",
-    title: "Segurança",
+    title: "Controles de segurança",
     weight: "20%",
-    description: "SECURITY.md, CodeQL, dependências e configuração segura.",
+    description:
+      "Sinais públicos de política, automação e evidências versionadas. Não é pentest.",
   },
   {
     index: "04",
@@ -34,6 +35,10 @@ const PILLARS = [
 const TRUST_ROWS = [
   ["Escopo público", "Somente repositórios públicos no analisador aberto."],
   ["Dados lidos", "Metadados, linguagens e árvore recursiva do GitHub."],
+  [
+    "Escopo de segurança",
+    "Mede controles observáveis na estrutura pública; não certifica ausência de vulnerabilidades.",
+  ],
   ["IA externa", "Nenhum código-fonte é enviado para modelos externos."],
   ["GitHub App", "JWT RS256 + webhooks HMAC SHA-256 em produção."],
   ["Cache", "Até 5 min, invalidado por webhook quando o repositório muda."],

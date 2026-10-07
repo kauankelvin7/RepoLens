@@ -67,8 +67,12 @@ export interface RepositorySignals {
   workflows: number;
   codeql: boolean;
   dependabot: boolean;
+  dependencyUpdates: boolean;
   lockfile: boolean;
   tests: boolean;
+  securityTests: boolean;
+  securityDocs: boolean;
+  accessPolicies: boolean;
   issueTemplates: boolean;
   pullRequestTemplate: boolean;
   docsDirectory: boolean;
@@ -86,8 +90,12 @@ export interface RepositoryEvidence {
   workflows: string[];
   codeql: string[];
   dependabot: string[];
+  dependencyUpdates: string[];
   lockfile: string[];
   tests: string[];
+  securityTests: string[];
+  securityDocs: string[];
+  accessPolicies: string[];
   issueTemplates: string[];
   pullRequestTemplate: string[];
   docsDirectory: string[];
