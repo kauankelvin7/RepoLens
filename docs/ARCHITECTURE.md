@@ -37,11 +37,13 @@ The MVP calculates five independent pillars:
 
 1. Documentation
 2. Automation
-3. Security
+3. Security controls
 4. Maintenance
 5. Engineering
 
-Scores use observable signals such as README, license, tests, workflows, Dependabot, CodeQL, templates, typed languages, repository activity, and lockfiles. No LLM is required.
+Scores use observable signals such as README, license, tests, workflows, automated dependency updates, CodeQL, templates, typed languages, repository activity, lockfiles, security-focused test paths, dedicated security documentation, and recognizable access-policy files. No LLM is required.
+
+The security-controls pillar is intentionally a **repository posture** score. It describes public controls that can be verified from repository metadata and the recursive Git tree; it does not inspect runtime behavior, read arbitrary source files, scan for vulnerabilities, or replace a security audit or penetration test. This boundary keeps the normal analysis at three GitHub API requests.
 
 ## GitHub App path
 

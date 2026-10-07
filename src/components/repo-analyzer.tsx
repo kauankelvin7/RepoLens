@@ -256,7 +256,7 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
 
         <div className="score-hero" data-tone={scoreTone(analysis.overallScore)}>
           <div className="score-header">
-            <span className="score-label">ÍNDICE GERAL</span>
+            <span className="score-label">ÍNDICE DE MATURIDADE</span>
             <span className="score-grade">Faixa {analysis.grade}</span>
           </div>
 
@@ -296,8 +296,9 @@ function AnalysisDashboard({ analysis }: { analysis: RepoAnalysis }) {
           </div>
 
           <p>
-            O score não é uma opinião. Cada linha mostra o peso máximo, os
-            pontos obtidos e a evidência que sustentou o resultado.
+            O score mede maturidade observável do repositório. Cada linha mostra
+            o peso máximo, os pontos obtidos e a evidência que sustentou o
+            resultado.
           </p>
         </div>
 
@@ -443,6 +444,14 @@ function CategoryPanel({
         <span />
       </div>
 
+      {score.key === "security" ? (
+        <p className="notice">
+          Este pilar mede controles públicos observáveis na estrutura do
+          repositório. Não é varredura de vulnerabilidades, pentest ou
+          certificação de segurança da aplicação.
+        </p>
+      ) : null}
+
       <div className="criteria-table">
         {score.criteria.map((item) => (
           <div className="criterion-row" key={item.id}>
@@ -495,6 +504,7 @@ function SignalSummary({ analysis }: { analysis: RepoAnalysis }) {
     ["GitHub Actions", analysis.signals.workflows > 0],
     ["Testes", analysis.signals.tests],
     ["SECURITY.md", analysis.signals.securityPolicy],
+    ["Atualizações automáticas", analysis.signals.dependencyUpdates],
     ["Lockfile", analysis.signals.lockfile],
     ["CodeQL", analysis.signals.codeql],
   ] as const;
